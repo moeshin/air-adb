@@ -1,0 +1,59 @@
+#!/bin/sh
+
+if [ "$1" == "-?" -o "$1" == "-h" -o "$1" == "--help" ]; then
+	echo "Usage:"
+	echo "  $0 -?|-h|--help	Get help"
+	echo "  $0 [port]		Start adb over network"
+	echo "  $0 stop		Stop adb over network"
+	echo "  $0 status		Get Status"
+	exit
+fi
+
+has_root=0
+
+if [ "`id -u`" -eq "0" ] || command -v su >/dev/null ; then
+	has_root=1
+	echo "Has root"
+fi
+
+PORT_DEFAULT=5555
+
+function startAdbOverNetwork() {
+	setprop service.adb.tcp.port "$1"
+	echo "Start air adb. (Port: $1)"
+}
+
+if [ -z "$1" ]; then
+	startAdbOverNetwork "$PORT_DEFAULT"
+elif [ "$1" == "status" ]; then
+	port="`getprop service.adb.tcp.port`"
+	if [ -z "$port" ]; then
+		echo "Is stopped"
+		exit
+	fi
+	echo "Air adb is running (Port: $port)"
+	exit
+elif [ "$1" == "stop" ]; then
+	port="`getprop service.adb.tcp.port`"
+	if [ -z "$port" ]; then
+		echo "Has stop"
+		exit
+	fi
+	if [ $has_root == 1 ]; then
+		su - root -c resetprop --delete service.adb.tcp.port
+	else
+		setprop service.adb.tcp.port ""
+	fi
+	echo "stop air adb. (Port: $port)"
+	exit
+else
+	startAdbOverNetwork "$1"
+fi
+
+if [ $has_root == 0 ]; then
+	echo "You don't have root, so you need to manually re-open ADB debugging in developer mode."
+	exit
+fi
+
+# Restart adbd
+nohup su - root -c "stop adbd && start adbd" >/dev/null 2>&1 &
