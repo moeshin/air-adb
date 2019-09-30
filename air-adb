@@ -1,6 +1,6 @@
-#!/bin/sh
+#!/system/bin/sh
 
-if [ "$1" == "-?" -o "$1" == "-h" -o "$1" == "--help" ]; then
+if [ "$1" = "-?" -o "$1" = "-h" -o "$1" = "--help" ]; then
 	echo "Usage:"
 	echo "  $0 -?|-h|--help	Get help"
 	echo "  $0 [port]		Start adb over network"
@@ -9,51 +9,76 @@ if [ "$1" == "-?" -o "$1" == "-h" -o "$1" == "--help" ]; then
 	exit
 fi
 
-has_root=0
+# Get su
+_su=""
+for p in /sbin/su /system/sbin/su /system/bin/su /system/xbin/su /su/bin/su /magisk/.core/bin/su
+do
+  if [ -x $p ]; then
+    _su="$p -c"
+		break
+	fi
+done
 
-if [ "`id -u`" -eq "0" ] || command -v su >/dev/null ; then
-	has_root=1
-	echo "Has root"
+# Check root
+if [ -z "$_su" ]; then
+  echo "No root!"
+  exit 
 fi
 
-PORT_DEFAULT=5555
+# Custom function
+inPATH() {
+	strings=$(echo "$PATH" | sed 's/:/ /g')
+    for str in $strings
+	do  
+		if [ "$1" = "$str" ]; then
+			return 0
+		fi  
+	done
+	return 1
+}
 
-function startAdbOverNetwork() {
-	setprop service.adb.tcp.port "$1"
+setPATH() {
+	if ! inPATH "$1"; then
+		PATH="$1:$PATH"
+	fi
+}
+
+startAdbOverNetwork() {
+	${_su} setprop service.adb.tcp.port "$1"
 	echo "Start air adb. (Port: $1)"
 }
 
+# Set PATH
+setPATH /system/bin
+setPATH /sbin
+
+PORT_DEFAULT=5555
+
 if [ -z "$1" ]; then
 	startAdbOverNetwork "$PORT_DEFAULT"
-elif [ "$1" == "status" ]; then
-	port="`getprop service.adb.tcp.port`"
+elif [ "$1" = "status" ]; then
+	port="`${_su} getprop service.adb.tcp.port`"
 	if [ -z "$port" ]; then
 		echo "Is stopped"
 		exit
 	fi
 	echo "Air adb is running (Port: $port)"
 	exit
-elif [ "$1" == "stop" ]; then
-	port="`getprop service.adb.tcp.port`"
+elif [ "$1" = "stop" ]; then
+	port="`${_su} getprop service.adb.tcp.port`"
 	if [ -z "$port" ]; then
 		echo "Has stop"
 		exit
 	fi
-	if [ $has_root == 1 ]; then
-		su - root -c resetprop --delete service.adb.tcp.port
+	if command -v resetprop >/dev/null 2>&1; then
+		${_su} resetprop --delete service.adb.tcp.port
 	else
-		setprop service.adb.tcp.port ""
+		${_su} setprop service.adb.tcp.port ""
 	fi
-	echo "stop air adb. (Port: $port)"
-	exit
+	echo "Stop air adb. (Port: $port)"
 else
 	startAdbOverNetwork "$1"
 fi
 
-if [ $has_root == 0 ]; then
-	echo "You don't have root, so you need to manually re-open ADB debugging in developer mode."
-	exit
-fi
-
 # Restart adbd
-nohup su - root -c "stop adbd && start adbd" >/dev/null 2>&1 &
+nohup $_su "stop adbd && start adbd" >/dev/null 2>&1 &
