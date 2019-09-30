@@ -34,3 +34,14 @@ wget -O air-adb https://raw.githubusercontent.com/moeshin/air-adb/master/air-adb
 ./air-adb
 ```
 
+## Usage
+
+```
+./air-adb -?|-h|--help		Get help
+./air-adb [port]			Start adb over network
+./air-adb stop				Stop adb over network
+./air-adb status 			Get Status
+```
+
+
+
