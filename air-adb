@@ -3,7 +3,7 @@
 if [ "$1" = "-?" -o "$1" = "-h" -o "$1" = "--help" ]; then
 	echo "Usage:"
 	echo "  $0 -?|-h|--help	Get help"
-	echo "  $0 [port]		Start adb over network"
+	echo "  $0 [port]		Start adb over network, default by 5555"
 	echo "  $0 stop		Stop adb over network"
 	echo "  $0 status		Get Status"
 	exit

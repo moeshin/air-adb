@@ -38,7 +38,7 @@ wget -O air-adb https://raw.githubusercontent.com/moeshin/air-adb/master/air-adb
 
 ```
 ./air-adb -?|-h|--help		Get help
-./air-adb [port]			Start adb over network
+./air-adb [port]			Start adb over networ, default by 5555
 ./air-adb stop				Stop adb over network
 ./air-adb status 			Get Status
 ```
